@@ -8,6 +8,7 @@ let csvReceivedFromServer;
 //Struttura di controllo
 if (elements != null && elements != []) {
   jsonElement = JSON.parse(elements);
+
 }
 
 //Elementi presi dall'Html
@@ -167,17 +168,117 @@ function fillDiv(type, element, index) {
 
 btnExport.addEventListener("click", () => {
   
-  if (elements != null && elements != []) {
+  /*  if (elements != null && elements != []) {
     credentialsToCsv();
     console.log(csv);
     // Esegui la prima chiamata Fetch e, quando è completata, esegui la seconda
     sendCsvToNode(csv)
-      .then(getCsvFromServerAndZip()) //Then è come un await..
+      //.then(getCsvFromServerAndZip()) //Then è come un await..
       .catch((error) => console.error("Error", error))
+      downloadCsvZip();
       
+  }*/
+  //Lo aggiungo ora :)
+  credentialsToCsv();
+  console.log(typeof(csv))
+  try {
+
+    // Chiamata AJAX
+    fetch('/csvZip', {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({csv}),
+    })
+    .then(function (response) {
+        
+        // Leggi header archive-password -> password per aprire il file ZIP cifrato
+        //password = response.headers.get('archive-password');
+        
+        return response.blob();
+    })
+    .then(function (blob) {
+        
+        // Crea bottone temporaneo per trigger download
+        var a = document.createElement("a");
+        a.href = window.URL.createObjectURL(blob);
+        a.download = "Credentials";
+  
+        // Click bottone per far partire il download
+        a.click();
+        
+        // Rimuovi bottone
+        a.remove();
+    
+    })
+    .catch(function(error) {
+        
+        console.log(error);
+  
+    });
+  
+  } catch(error){
+    console.log(error);
   }
+  
+ 
+  
+
+
+
+
 });
 
+
+/* try {
+
+  // Chiamata AJAX
+  fetch('/export', {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json"
+      },
+      body: JSON.stringify(requestBodyJson),
+  })
+  .then(function (response) {
+      
+      // Leggi header archive-password -> password per aprire il file ZIP cifrato
+      //password = response.headers.get('archive-password');
+      
+      return response.blob();
+  })
+  .then(function (blob) {
+      
+      // Crea bottone temporaneo per trigger download
+      var a = document.createElement("a");
+      a.href = window.URL.createObjectURL(blob);
+      a.download = "Credentials";
+
+      // Click bottone per far partire il download
+      a.click();
+      
+      // Rimuovi bottone
+      a.remove();
+  
+  })
+  .catch(function(error) {
+      
+      console.log(error);
+
+  });
+
+} catch(error){
+  console.log(error);
+} */
+
+
+
+
+
+
+/*  
+//PROVIAMO AD OSCURARE UN ATTIMO...
 // Funzione per eseguire la prima chiamata Fetch
 function sendCsvToNode(csv) {
   return fetch("/csvZip", {
@@ -194,13 +295,14 @@ function sendCsvToNode(csv) {
       // Restituisci i dati per passarli alla successiva chiamata
       return data;
     });
-}
-
+}*/
+/*  //OK PROVO A FARE UNA SOLA CHIAMATA
 // Funzione per eseguire la seconda chiamata Fetch
 function getCsvFromServerAndZip() { //Prendi csv dal server 
   return fetch('csvZip', {
     method: 'GET',
     headers: {
+      //'Content-Type': 'application/json',
       'Content-Type': 'application/json',
     },
   })
@@ -216,7 +318,7 @@ function getCsvFromServerAndZip() { //Prendi csv dal server
       //return csvReceivedFromServer;
     });
 }
-
+*/
 
 
 

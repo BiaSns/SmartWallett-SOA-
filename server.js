@@ -4,10 +4,14 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const archiver = require('archiver');
 const cors = require('cors');
-
-
 const app = express();
 const port = 3000;
+
+
+archiver.registerFormat('zip-encrypted', require("archiver-zip-encrypted"));
+
+
+
 let jsonString;
 let csvRec;
 
@@ -54,36 +58,58 @@ app.get('/savePasswordList', (req, res) => {
 });
 
 
-
-
-
-
+ //PROVIAMO CON UNA SOLA CHIAMATA CLIENT E UNA SOLA CHIAMATA SERVER
 //PROCEDURE CREAZIONE FILE ZIP CON PASSWORD ED INVIO AL CLIENT
 app.post('/csvZip', (req, res) => {
   console.log('Request POST to /csvZip received.'); 
-  // Supponiamo che il file JSON inviato dal client sia memorizzato in req.body
+
 
    // Converte l'oggetto JSON in una stringa JSON
    //csvRec = JSON.stringify(req.body, null, 2);
    csvRec = req.body
    console.log(csvRec);
+  
+   // Converte l'oggetto JSON in una stringa JSON
+   //csvRec = JSON.stringify(req.body, null, 2);
+   csvRec = req.body
+   console.log(csvRec);
+  
+   //Questa dichiarazione risolve l'errore al buffer
+   csvRec = JSON.stringify(req.body);
+   csvRec = csvRec.replace(/[{}]/g, '');
+   
+   const bufferData = Buffer.from(csvRec);
+   // Crea oggetto archivio ZIP cifrato
+  let archive = archiver.create('zip-encrypted', { zlib: { level: 8 }, encryptionMethod: 'aes256', password: "1234" });
+ 
+  // Catch eventuali warnings
+  archive.on('warning', function (err) {
+    if (err.code === 'ENOENT') {
+      console.log(err);
+    } else {
+      throw err;
+    }
+  });
 
-   // Invia il contenuto del file JSON al client
-   //res.json(csvRec);
-   //res.json({OK : 'DONE'});
-   res.send(csvRec);  
+  // Catch eventuali errori
+  archive.on('error', function (err) {
+    throw err;
+  });
+
+  // Aggiunge file credentials.json con le credenziali nell'archivio
+  archive.append(bufferData, { name: 'credentials.csv' });
+  // Aggiunge header Content-Disposition nella risposta
+  res.attachment('credentials.zip');
+  // Aggiunge header con password dell'archivio nella risposta
+  res.setHeader("archive-password", "1234");
+
+  // Imposta stream di scrittura dell'archivio
+  archive.pipe(res);
+
+  // Flush oggetto archivio per poter restituire la response al frontend
+  archive.finalize();
+    
 });
-
-//QUI SI INVIA LA VARIABILE CSV MESSA IN UN ZIP PROTETTO DA PASSWORD.
-app.get('/csvZip', (req, res) => {
-  console.log('Request GET to /savePasswordList received.'); 
-   // Invia il contenuto del file JSON al client
-   res.send(csvRec);
-   //res.json({ csv: csv });
-  //res.send(csv);
-});
-
-
 
 
 

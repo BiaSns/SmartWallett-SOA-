@@ -1,16 +1,16 @@
-
+//Inizializzazione moduli
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const archiver = require('archiver');
 const cors = require('cors');
+const generator = require('generate-password');
+
 const app = express();
 const port = 3000;
 
 
 archiver.registerFormat('zip-encrypted', require("archiver-zip-encrypted"));
-
-
 
 let jsonString;
 let csvRec;
@@ -19,13 +19,13 @@ app.use(bodyParser.json());
 app.use(cors());
 
 
-// Definisci la directory contenente la tua pagina HTML
+//Definisci la directory contenente la pagina HTML
 const publicDirectory = path.join(__dirname, 'public');
 
-// Configura Express per servire file statici dalla directory 'public'
+//Configura Express per servire file statici dalla directory 'public'
 app.use(express.static(publicDirectory));
 
-// Crea una route per la tua pagina principale
+//Crea una route per la pagina principale
 app.get('/', (req, res) => {
   res.sendFile(path.join(publicDirectory, 'passwordList.html'));
 });
@@ -38,11 +38,9 @@ app.get('/', (req, res) => {
 // QUINDI QUANDO LA CHIAMERO DOVRO DARLE UN QUALCOSA DA INSERIRE DENTRO LA VARIABILE 
  app.post('/savePasswordList', (req, res) => {
   console.log('Request POST to /savePasswordList received.'); 
-  // Supponiamo che il file JSON inviato dal client sia memorizzato in req.body
 
    // Converte l'oggetto JSON in una stringa JSON
    jsonString = JSON.stringify(req.body, null, 2);
-   console.log(jsonString);
 
    // Invia il contenuto del file JSON al client
    res.send(jsonString);  
@@ -63,26 +61,19 @@ app.get('/savePasswordList', (req, res) => {
 app.post('/csvZip', (req, res) => {
   console.log('Request POST to /csvZip received.'); 
 
-
-   // Converte l'oggetto JSON in una stringa JSON
-   //csvRec = JSON.stringify(req.body, null, 2);
-   csvRec = req.body
-   console.log(csvRec);
-  
-   // Converte l'oggetto JSON in una stringa JSON
-   //csvRec = JSON.stringify(req.body, null, 2);
-   csvRec = req.body
-   console.log(csvRec);
-  
-   //Questa dichiarazione risolve l'errore al buffer
+   //Converte l'oggetto JSON in una stringa JSON(Necessario poichè nel buffer posso caricare solo tipo "stringa")
    csvRec = JSON.stringify(req.body);
+   //Rimuovo le graffe create con la conversione JSON
    csvRec = csvRec.replace(/[{}]/g, '');
-   
+   //Questa dichiarazione risolve l'errore al buffer
    const bufferData = Buffer.from(csvRec);
+   //Creo una password dinamica
+   const password = generator.generate({ length: 8, numbers: true });
+
    // Crea oggetto archivio ZIP cifrato
-  let archive = archiver.create('zip-encrypted', { zlib: { level: 8 }, encryptionMethod: 'aes256', password: "1234" });
+  let archive = archiver.create('zip-encrypted', { zlib: { level: 8 }, encryptionMethod: 'aes256', password: password });
  
-  // Catch eventuali warnings
+  //Catch eventuali warnings
   archive.on('warning', function (err) {
     if (err.code === 'ENOENT') {
       console.log(err);
@@ -91,19 +82,19 @@ app.post('/csvZip', (req, res) => {
     }
   });
 
-  // Catch eventuali errori
+  //Catch eventuali errori
   archive.on('error', function (err) {
     throw err;
   });
 
-  // Aggiunge file credentials.json con le credenziali nell'archivio
+  //Aggiunge file credentials.json con le credenziali nell'archivio
   archive.append(bufferData, { name: 'credentials.csv' });
-  // Aggiunge header Content-Disposition nella risposta
+  //Aggiunge header Content-Disposition nella risposta
   res.attachment('credentials.zip');
-  // Aggiunge header con password dell'archivio nella risposta
-  res.setHeader("archive-password", "1234");
+  //Aggiunge header con password dell'archivio nella risposta
+  res.setHeader("archive-password", password);
 
-  // Imposta stream di scrittura dell'archivio
+  //Imposta stream di scrittura dell'archivio
   archive.pipe(res);
 
   // Flush oggetto archivio per poter restituire la response al frontend
@@ -114,7 +105,7 @@ app.post('/csvZip', (req, res) => {
 
 
 
-// Avvia il server e mettilo in ascolto sulla porta specificata
+// Avvia il server e lo mette in ascolto sulla porta specificata
 app.listen(port, () => {
   console.log(`Server listening on ${port}`);
 });

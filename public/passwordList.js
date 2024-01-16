@@ -1,14 +1,18 @@
+//Assegno alla variabile il contenuto dell'array passato dal LocalStorage
 elements = localStorage.getItem("elements"); //Creo una variabile che conterrà l'array elements(di oggetti)
+
+//Variabili
 let jsonElement = [];
+//Usata per funzione "Export"
 let csv;
+//Variabili usate per funzione "List"
 let jsonString;
 let list;
-let csvReceivedFromServer;
 
-//Struttura di controllo
+
+//Struttura di controllo per gestire errori in caso l'array fosse vuoto
 if (elements != null && elements != []) {
   jsonElement = JSON.parse(elements);
-
 }
 
 //Elementi presi dall'Html
@@ -22,32 +26,16 @@ let btnExport = document.getElementById("btnExport");
 let containerList = document.getElementById("containerList");
 let btnList = document.getElementById("btnList");
 
-//Evento che esegue la pulizia dei dati salvati in locale
-btnClear.addEventListener("click", () => {
-  localStorage.setItem("elements", []); //Setto elements come array vuoto
-  location.reload(); //Avvia il refresh
-});
+
+
+
+//FUNZIONI PRINCIPALI
 
 //Per ogni elemento(oggetto) dell'array chiamo la funzione createDiv che chiamerà a sua volta altre functions
 jsonElement && //Condizione in linea (se jsonElement non è null quindi true)
   jsonElement.forEach((element, index) => {
     createDiv("div", element, index);
   });
-
-//Bottoni per visualizzazione form stile popup
-btnAddPass.addEventListener("click", (e) => {
-  e.preventDefault();
-  addPasswordPopup.style.display = "flex";
-  containerList.style.pointerEvents = "none";
-  btnExport.style.pointerEvents = "none";
-  btnClearPass.style.pointerEvents = "none";
-});
-btnCloseForm.addEventListener("click", () => {
-  addPasswordPopup.style.display = "none";
-  containerList.style.pointerEvents = "auto";
-  btnExport.style.pointerEvents = "auto";
-  btnClearPass.style.pointerEvents = "auto";
-});
 
 function createDiv(type, element, index) {
   let returnedDiv = fillDiv(type, element, index);
@@ -166,24 +154,38 @@ function fillDiv(type, element, index) {
   return newDiv;
 }
 
-btnExport.addEventListener("click", () => {
-  
-  /*  if (elements != null && elements != []) {
-    credentialsToCsv();
-    console.log(csv);
-    // Esegui la prima chiamata Fetch e, quando è completata, esegui la seconda
-    sendCsvToNode(csv)
-      //.then(getCsvFromServerAndZip()) //Then è come un await..
-      .catch((error) => console.error("Error", error))
-      downloadCsvZip();
-      
-  }*/
-  //Lo aggiungo ora :)
-  credentialsToCsv();
-  console.log(typeof(csv))
-  try {
 
-    // Chiamata AJAX
+
+
+
+//Event Listeners
+  
+//Evento che esegue la pulizia dei dati salvati in locale
+btnClear.addEventListener("click", () => {
+  localStorage.setItem("elements", []); //Setto elements come array vuoto
+  location.reload(); //Avvia il refresh
+});
+
+//Bottoni per visualizzazione form stile popup
+btnAddPass.addEventListener("click", (e) => {
+  e.preventDefault();
+  addPasswordPopup.style.display = "flex";
+  containerList.style.pointerEvents = "none";
+  btnExport.style.pointerEvents = "none";
+  btnClearPass.style.pointerEvents = "none";
+});
+
+btnCloseForm.addEventListener("click", () => {
+  addPasswordPopup.style.display = "none";
+  containerList.style.pointerEvents = "auto";
+  btnExport.style.pointerEvents = "auto";
+  btnClearPass.style.pointerEvents = "auto";
+});
+
+btnExport.addEventListener("click", () => {
+  credentialsToCsv();
+ try {
+    //Chiamata AJAX usando API Fetch
     fetch('/csvZip', {
         method: "POST",
         headers: {
@@ -193,24 +195,23 @@ btnExport.addEventListener("click", () => {
     })
     .then(function (response) {
         
-        // Leggi header archive-password -> password per aprire il file ZIP cifrato
-        //password = response.headers.get('archive-password');
+        //Leggi header archive-password -> password per aprire il file ZIP cifrato
+        password = response.headers.get('archive-password');
         
         return response.blob();
     })
     .then(function (blob) {
         
-        // Crea bottone temporaneo per trigger download
+        //Crea bottone temporaneo per trigger download
         var a = document.createElement("a");
         a.href = window.URL.createObjectURL(blob);
         a.download = "Credentials";
   
-        // Click bottone per far partire il download
+        //Click bottone per far partire il download
         a.click();
         
-        // Rimuovi bottone
+        //Rimuovi bottone
         a.remove();
-    
     })
     .catch(function(error) {
         
@@ -221,127 +222,8 @@ btnExport.addEventListener("click", () => {
   } catch(error){
     console.log(error);
   }
-  
- 
-  
-
-
-
 
 });
-
-
-/* try {
-
-  // Chiamata AJAX
-  fetch('/export', {
-      method: "POST",
-      headers: {
-          "Content-Type": "application/json"
-      },
-      body: JSON.stringify(requestBodyJson),
-  })
-  .then(function (response) {
-      
-      // Leggi header archive-password -> password per aprire il file ZIP cifrato
-      //password = response.headers.get('archive-password');
-      
-      return response.blob();
-  })
-  .then(function (blob) {
-      
-      // Crea bottone temporaneo per trigger download
-      var a = document.createElement("a");
-      a.href = window.URL.createObjectURL(blob);
-      a.download = "Credentials";
-
-      // Click bottone per far partire il download
-      a.click();
-      
-      // Rimuovi bottone
-      a.remove();
-  
-  })
-  .catch(function(error) {
-      
-      console.log(error);
-
-  });
-
-} catch(error){
-  console.log(error);
-} */
-
-
-
-
-
-
-/*  
-//PROVIAMO AD OSCURARE UN ATTIMO...
-// Funzione per eseguire la prima chiamata Fetch
-function sendCsvToNode(csv) {
-  return fetch("/csvZip", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      //'Content-Type': 'text/plain'
-    },
-    body: JSON.stringify({csv}),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log("First call OK:", data);
-      // Restituisci i dati per passarli alla successiva chiamata
-      return data;
-    });
-}*/
-/*  //OK PROVO A FARE UNA SOLA CHIAMATA
-// Funzione per eseguire la seconda chiamata Fetch
-function getCsvFromServerAndZip() { //Prendi csv dal server 
-  return fetch('csvZip', {
-    method: 'GET',
-    headers: {
-      //'Content-Type': 'application/json',
-      'Content-Type': 'application/json',
-    },
-  })
-    .then(response => response.json())
-    .then(csvReceived => {
-      // Ora puoi memorizzare il dato CSV nella tua variabile
-      csvReceivedFromServer = csvReceived;//.csv;
-      console.log('OK:', csvReceivedFromServer);
-      
-      // Restituisci i dati per passarli ad eventuali ulteriori operazioni
-      console.log(csvReceivedFromServer);
-      downloadCsvZip();
-      //return csvReceivedFromServer;
-    });
-}
-*/
-
-
-
-
-
-
-
-function credentialsToCsv() {
-  const elementsKeys = [Object.keys(elements[0])]; // Object.keys -> restituisce le chiavi dell'oggetto dato
-  const concatenatedArray = elementsKeys.concat(elements); //Concatena le keys separandole con una virgola
-  csv = concatenatedArray
-    .map((element) => {
-      //crea un csv mappando per ogni elemento i valori delle chiavi dell'oggetto(element)
-      return Object.values(element).toString(); //Li parsa con toString()
-    })
-    .join("\n"); //Il join con \n per avere lo spazio a capo
-}
-
-
-
-
-
-
 
 //CREAZIONE LISTA PASSWORD SCARICABILE(JSON), RIEMPITA DALLA VARIABILE INVIATA AL SERVER E RISPEDITA AL CLIENT.
 btnList.addEventListener("click", async () => {
@@ -357,6 +239,11 @@ btnList.addEventListener("click", async () => {
     console.error("Error:", error.message);
   }
 });
+
+
+
+
+//Funzioni AJAX usando XMLHTTpRequest per interrogazione e restituzione dati in JSON
 
 async function sendList() {
   return new Promise((resolve, reject) => {
@@ -410,6 +297,10 @@ async function getList() {
   });
 }
 
+
+
+//Altre funzioni
+
 function downloadList() {
   // Crea un elemento "a" e simula un clic per avviare il download.
   const a = document.createElement("a");
@@ -423,17 +314,15 @@ function downloadList() {
   window.URL.revokeObjectURL(url);
 }
 
-function downloadCsvZip() {
-  // Crea un elemento "a" e simula un clic per avviare il download.
-  const a = document.createElement("a");
-  console.log("OK", csvReceivedFromServer);
-  // {csv:}
-  const blob = new Blob([JSON.stringify(csvReceivedFromServer)], { type: "application/json" });
-  const url = window.URL.createObjectURL(blob);
-  a.href = url;
-  a.download = "Credentials.csv";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
+
+function credentialsToCsv() {
+  //Object.keys -> restituisce le chiavi dell'oggetto dato
+  const elementsKeys = [Object.keys(elements[0])];
+  //Concatena le keys separandole con una virgola
+  const concatenatedArray = elementsKeys.concat(elements); 
+  csv = concatenatedArray
+    .map((element) => {
+      //crea un csv mappando per ogni elemento i valori delle chiavi dell'oggetto(element) parsando con toString()
+      return Object.values(element).toString();
+    }).join("---");
 }

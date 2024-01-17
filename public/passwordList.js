@@ -182,8 +182,11 @@ btnCloseForm.addEventListener("click", () => {
   btnClearPass.style.pointerEvents = "auto";
 });
 
+
 btnExport.addEventListener("click", () => {
-  credentialsToCsv();
+
+  //Se si è online...{ }
+if (navigator.onLine){
  try {
     //Chiamata AJAX usando API Fetch
     fetch('/csvZip', {
@@ -203,7 +206,7 @@ btnExport.addEventListener("click", () => {
     .then(function (blob) {
         
         //Crea bottone temporaneo per trigger download
-        var a = document.createElement("a");
+        let a = document.createElement("a");
         a.href = window.URL.createObjectURL(blob);
         a.download = "Credentials";
   
@@ -222,7 +225,11 @@ btnExport.addEventListener("click", () => {
   } catch(error){
     console.log(error);
   }
-
+ } else {
+  //In questo caso si è offline quindi avvio lo scaricamento semplice del documento
+  credentialsToCsv();
+  download(csv);
+ }     
 });
 
 //CREAZIONE LISTA PASSWORD SCARICABILE(JSON), RIEMPITA DALLA VARIABILE INVIATA AL SERVER E RISPEDITA AL CLIENT.
@@ -297,12 +304,40 @@ async function getList() {
   });
 }
 
+//Controllo online/offline
+let onlineStatus = navigator.onLine;
 
+//Aggiungo un listener per gestire cambiamenti di stato online/offline
+window.addEventListener('online', function() {
+  onlineStatus = true;
+  console.log("we are online");
+});
+window.addEventListener('offline', function() {
+  onlineStatus = false;
+  console.log("we are offline");
+});
+
+
+//Funzione per scaricamento csv Offline
+const download = function (data) { 
+  //Creo un blob formato csv e gli passo il parametro data
+  const blob = new Blob([data], { type: 'text/csv' }); 
+  //Creo un oggetto urls per il downnload 
+  const url = window.URL.createObjectURL(blob) 
+  //creo in link
+  const a = document.createElement('a') 
+  //passando il blob url  
+  a.setAttribute('href', url) 
+  //settando il link e passando un nome
+  a.setAttribute('download', 'Credentials.csv'); 
+  //Attivo la funzione, quindi creo il docuemnto
+  a.click() 
+}
 
 //Altre funzioni
 
 function downloadList() {
-  // Crea un elemento "a" e simula un clic per avviare il download.
+  //Crea un elemento "a" e simula un clic per avviare il download.
   const a = document.createElement("a");
   const blob = new Blob([JSON.stringify(list)], { type: "application/json" });
   const url = window.URL.createObjectURL(blob);
@@ -324,5 +359,5 @@ function credentialsToCsv() {
     .map((element) => {
       //crea un csv mappando per ogni elemento i valori delle chiavi dell'oggetto(element) parsando con toString()
       return Object.values(element).toString();
-    }).join("---");
+    }).join("\n");
 }

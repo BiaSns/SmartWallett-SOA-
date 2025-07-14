@@ -1,42 +1,30 @@
-//Assegno alla variabile il contenuto dell'array passato dal LocalStorage
-elements = localStorage.getItem("elements"); //Creo una variabile che conterrà l'array elements(di oggetti)
-
-//Variabili
-let jsonElement = [];
-//Usata per funzione "Export"
-let csv;
-//Variabili usate per funzione "List"
-let jsonString;
-let list;
-
-
-//Struttura di controllo per gestire errori in caso l'array fosse vuoto
-if (elements != null && elements != []) {
-  jsonElement = JSON.parse(elements);
-}
-
-//Elementi presi dall'Html
+/*
+// ELEMENTI HTML
 let btnAddPass = document.getElementById("btnAddPass");
 let addPasswordPopup = document.getElementById("addPasswordPopup");
 let btnCloseForm = document.getElementById("btnCloseForm");
 let credentialsContainer = document.getElementById("credentialsContainer");
 let credentialsAsPopup = document.getElementById("credentialAsPopup");
-let btnClear = document.getElementById("btnClearPass");
-let btnExport = document.getElementById("btnExport");
-let containerList = document.getElementById("containerList");
-let btnList = document.getElementById("btnList");
+let btnClearPass = document.getElementById("btnClearPass");
+const form = document.getElementById("dataForm");
 
+let jsonElement = [];
 
+// CARICA PASSWORD DAL SERVER
+function loadPasswords() {
+  fetch('http://localhost:3000/passwords')
+    .then(res => res.json())
+    .then(data => {
+      jsonElement = data;
+      credentialsContainer.innerHTML = '';
+      jsonElement.forEach((element, index) => {
+        createDiv("div", element, index);
+      });
+    })
+    .catch(err => console.error('Errore nel caricamento:', err));
+}
 
-
-//FUNZIONI PRINCIPALI
-
-//Per ogni elemento(oggetto) dell'array chiamo la funzione createDiv che chiamerà a sua volta altre functions
-jsonElement && //Condizione in linea (se jsonElement non è null quindi true)
-  jsonElement.forEach((element, index) => {
-    createDiv("div", element, index);
-  });
-
+// CREA DIV PER OGNI PASSWORD
 function createDiv(type, element, index) {
   let returnedDiv = fillDiv(type, element, index);
   let btnRemovePass = document.createElement("button");
@@ -48,316 +36,478 @@ function createDiv(type, element, index) {
 
   btnRemovePass.addEventListener("click", (e) => {
     e.preventDefault();
-    //Fondamentale per rendere indipendente il bottone remove(Prima sull'onclick attivava anche il div Popup)
     e.stopPropagation();
-    //Splice serve ad eliminare dall'array.(p,p)
-    //Il 1 parametro(index) indica quale eliminare, il secondo(1) indica quanti elementi.
-    jsonElement.splice(index, 1);
-    localStorage.setItem("elements", JSON.stringify(jsonElement));
-    location.reload();
+
+    fetch(`http://localhost:3000/passwords/${element.id}`, {
+      method: 'DELETE'
+    })
+      .then(res => {
+        if (res.ok) loadPasswords();
+        else alert('Errore nella rimozione');
+      })
+      .catch(err => {
+        console.error('Errore nel DELETE:', err);
+        alert('Errore nel server');
+      });
   });
 
   returnedDiv.addEventListener("click", () => {
     divAsPopup("div", element, index);
   });
+
   return returnedDiv;
 }
 
+// MOSTRA POPUP CON DETTAGLI
 function divAsPopup(type, element, index) {
   let divPopup = document.createElement("div");
-  let indexElementPopup = document.createElement("h1");
-  let indexTextPopup = document.createTextNode(index);
-
   let btnClosePopup = document.createElement("button");
+  let btnSaveChanges = document.createElement("button");
+
   btnClosePopup.innerText = "Close";
   btnClosePopup.classList = "btnClosePopup";
-  divPopup.appendChild(btnClosePopup);
 
+  btnSaveChanges.innerText = "Salva modifiche";
+  btnSaveChanges.classList = "btnSaveChanges";
+
+  // ELEMENTI FORM MODIFICA
   let nameCredentialsPopup = document.createElement("h4");
-  let nameCredentialsPopupText = document.createTextNode(
-    element.nameCredentials
-  );
-  nameCredentialsPopup.appendChild(nameCredentialsPopupText);
+  nameCredentialsPopup.textContent = element.nameCredentials;
+
+  let labelUserPopup = document.createElement("label");
+  labelUserPopup.textContent = "User o Email";
 
   let userPopup = document.createElement("input");
-  let labelUserPopup = document.createElement("label");
-  let labelUserPopupText = document.createTextNode("User o Email");
-  labelUserPopup.appendChild(labelUserPopupText);
+  userPopup.type = "text";
+  userPopup.value = element.user;
 
-  userPopup.setAttribute("type", "text");
-  userPopup.setAttribute("value", element.user);
+  let labelPasswordPopup = document.createElement("label");
+  labelPasswordPopup.textContent = "Password";
 
   let passwordPopup = document.createElement("input");
-  let labelPasswordPopup = document.createElement("label");
-  let labelPasswordPopupText = document.createTextNode("Password");
-  labelPasswordPopup.appendChild(labelPasswordPopupText);
+  passwordPopup.type = "text";
+  passwordPopup.value = element.password;
 
-  passwordPopup.setAttribute("type", "text");
-  passwordPopup.setAttribute("value", element.password);
-
+  // POPUP STYLE
   divPopup.type = type;
-  divPopup.value = element.nameCredentials; //Nome del nuovo elemento creato
   divPopup.classList.add("divPopup");
-  divPopup.appendChild(nameCredentialsPopup); //Inserisco nome al div
-  divPopup.appendChild(labelUserPopup);
-  divPopup.appendChild(userPopup); //Inserisco user al div
-  divPopup.appendChild(labelPasswordPopup);
-  divPopup.appendChild(passwordPopup); //Inserisco password al div
-  divPopup.appendChild(btnClosePopup);
-  indexElementPopup.appendChild(indexTextPopup);
-  divPopup.appendChild(indexElementPopup);
+  divPopup.append(
+    nameCredentialsPopup,
+    labelUserPopup,
+    userPopup,
+    labelPasswordPopup,
+    passwordPopup,
+    btnSaveChanges,
+    btnClosePopup
+  );
   credentialsAsPopup.appendChild(divPopup);
-  indexElementPopup.style.display = "none";
+
+  // BLOCCO INTERAZIONI SOTTOSTANTI
   containerList.style.pointerEvents = "none";
-  btnExport.style.pointerEvents = "none";
   btnClearPass.style.pointerEvents = "none";
 
-  btnClosePopup.addEventListener("click", (e) => {
-    e.preventDefault();
-    divPopup.remove(index);
+  // CHIUSURA POPUP
+  btnClosePopup.addEventListener("click", () => {
+    divPopup.remove();
     containerList.style.pointerEvents = "auto";
-    btnExport.style.pointerEvents = "auto";
     btnClearPass.style.pointerEvents = "auto";
+  });
+
+  // SALVA MODIFICHE
+  btnSaveChanges.addEventListener("click", () => {
+    const updated = {
+      nameCredentials: nameCredentialsPopup.textContent,
+      user: userPopup.value,
+      password: passwordPopup.value
+    };
+    updatePassword(element.id, updated);
   });
 }
 
-//La funzione serve a creare un nuovo div nel momento in cui viene richiamata
+// CREA DIV LISTA PRINCIPALE
 function fillDiv(type, element, index) {
   let newDiv = document.createElement("div");
-  let nameCredentials = document.createElement("h1");
-  let nameText = document.createTextNode(element.nameCredentials);
-  let user = document.createElement("h1");
-  let userText = document.createTextNode(element.user);
-  let password = document.createElement("h1");
-  let passText = document.createTextNode(element.password);
-  let indexElement = document.createElement("h1");
-  let indexText = document.createTextNode(index);
+  newDiv.classList.add("returnedDiv");
 
-  newDiv.type = type;
-  newDiv.value = element.nameCredentials; //Nome del nuovo elemento creato
-  nameCredentials.appendChild(nameText);
-  user.appendChild(userText);
-  password.appendChild(passText);
-  indexElement.appendChild(indexText);
-  newDiv.appendChild(nameCredentials); //Inserisco nome al div
-  newDiv.appendChild(user); //Inserisco user al div
-  newDiv.appendChild(password); //Inserisco password al div
-  newDiv.appendChild(indexElement);
-  newDiv.classList.add("returnedDiv"); //Setto class="returnedDiv"
+  ["nameCredentials", "user", "password"].forEach(key => {
+    let h1 = document.createElement("h1");
+    h1.textContent = element[key];
+    if (key !== "nameCredentials") h1.style.display = "none";
+    newDiv.appendChild(h1);
+  });
 
-  //Imposto user e password nascosti
-  user.style.display = "none";
-  password.style.display = "none";
-  indexElement.style.display = "none";
-
-  //Ritorno il div che userò in function createDiv
   return newDiv;
 }
 
+// SUBMIT FORM AGGIUNTA PASSWORD
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
 
+  const myFormData = new FormData(e.target);
+  const nameCredentials = myFormData.get("nameCredentials");
+  const user = myFormData.get("user");
+  const password = myFormData.get("password");
 
+  validatePasswordSOAP(password, isValid => {
+    if (!isValid) {
+      alert("❌ Password non sicura! Deve avere almeno 8 caratteri, una maiuscola, un numero e un simbolo.");
+      return;
+    }
 
+    const formDataObj = { nameCredentials, user, password };
 
-//Event Listeners
-  
-//Evento che esegue la pulizia dei dati salvati in locale
-btnClear.addEventListener("click", () => {
-  localStorage.setItem("elements", []); //Setto elements come array vuoto
-  location.reload(); //Avvia il refresh
+    fetch("http://localhost:3000/passwords", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formDataObj)
+    })
+      .then(response => response.json())
+      .then(newPassword => {
+        loadPasswords(); // Ricarica tutto
+        form.reset();
+      })
+      .catch(err => {
+        console.error("Errore durante il salvataggio:", err);
+        alert("Errore durante il salvataggio");
+      });
+  });
 });
 
-//Bottoni per visualizzazione form stile popup
+// UPDATE PASSWORD
+function updatePassword(id, updatedData) {
+  fetch(`http://localhost:3000/passwords/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updatedData)
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Errore update");
+      return res.json();
+    })
+    .then(() => loadPasswords())
+    .catch(err => {
+      console.error("Errore:", err);
+      alert("Errore durante aggiornamento");
+    });
+}
+
+// VALIDAZIONE PASSWORD via SOAP
+function validatePasswordSOAP(password, callback) {
+  const url = "http://localhost:8001/wsdl";
+  const xml = `
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                      xmlns:urn="urn:PasswordService">
+      <soapenv:Body>
+        <urn:checkPasswordSecurity>
+          <password>${password}</password>
+        </urn:checkPasswordSecurity>
+      </soapenv:Body>
+    </soapenv:Envelope>`;
+
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/xml; charset=utf-8",
+      "SOAPAction": "checkPasswordSecurity"
+    },
+    body: xml
+  })
+    .then(response => response.text())
+    .then(xml => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, "text/xml");
+      const result = doc.getElementsByTagName("result")[0].textContent;
+      callback(result === "true");
+    })
+    .catch(err => {
+      console.error("Errore SOAP:", err);
+      callback(false);
+    });
+}
+
+// POPUP FORM APERTURA E CHIUSURA
 btnAddPass.addEventListener("click", (e) => {
   e.preventDefault();
   addPasswordPopup.style.display = "flex";
   containerList.style.pointerEvents = "none";
-  btnExport.style.pointerEvents = "none";
   btnClearPass.style.pointerEvents = "none";
 });
 
 btnCloseForm.addEventListener("click", () => {
   addPasswordPopup.style.display = "none";
   containerList.style.pointerEvents = "auto";
-  btnExport.style.pointerEvents = "auto";
   btnClearPass.style.pointerEvents = "auto";
 });
 
-
-btnExport.addEventListener("click", () => {
-
-  //Se si è online...{ }
-if (navigator.onLine){
- try {
-    //Chiamata AJAX usando API Fetch
-    fetch('/csvZip', {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({csv}),
+// CLEAR PASSWORDS
+btnClearPass.addEventListener("click", () => {
+  fetch('http://localhost:3000/passwords', { method: 'DELETE' })
+    .then(res => {
+      if (res.ok) loadPasswords();
+      else alert('Errore nella pulizia');
     })
-    .then(function (response) {
-        
-        //Leggi header archive-password -> password per aprire il file ZIP cifrato
-        password = response.headers.get('archive-password');
-        
-        return response.blob();
-    })
-    .then(function (blob) {
-        
-        //Crea bottone temporaneo per trigger download
-        let a = document.createElement("a");
-        a.href = window.URL.createObjectURL(blob);
-        a.download = "Credentials";
-  
-        //Click bottone per far partire il download
-        a.click();
-        
-        //Rimuovi bottone
-        a.remove();
-    })
-    .catch(function(error) {
-        
-        console.log(error);
-  
+    .catch(err => {
+      console.error('Errore nel DELETE:', err);
+      alert('Errore server');
     });
-  
-  } catch(error){
-    console.log(error);
-  }
- } else {
-  //In questo caso si è offline quindi avvio lo scaricamento semplice del documento
-  credentialsToCsv();
-  download(csv);
- }     
 });
 
-//CREAZIONE LISTA PASSWORD SCARICABILE(JSON), RIEMPITA DALLA VARIABILE INVIATA AL SERVER E RISPEDITA AL CLIENT.
-btnList.addEventListener("click", async () => {
-  jsonString = JSON.stringify(jsonElement, null, 2);
-
-  try {
-    await sendList(); // Effettua la prima chiamata POST
-    console.log("First call completed.");
-
-    await getList(); // Effettua la seconda chiamata GET
-    console.log("Second call completed.", jsonString);
-  } catch (error) {
-    console.error("Error:", error.message);
-  }
-});
+// CARICA PASSWORD AL LOAD
+window.addEventListener("load", loadPasswords);
+*/
 
 
 
 
-//Funzioni AJAX usando XMLHTTpRequest per interrogazione e restituzione dati in JSON
 
-async function sendList() {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    const url = "/savePasswordList";
-    xhr.open("POST", url, true);
-    xhr.setRequestHeader("Content-Type", "application/json");
 
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState === XMLHttpRequest.DONE) {
-        if (xhr.status === 200) {
-          console.log("List sent.");
-          resolve();
-        } else {
-          reject(
-            new Error(`Error in first call: ${xhr.status} ${xhr.statusText}`)
-          );
-        }
-      }
+
+// ELEMENTI HTML
+let btnAddPass = document.getElementById("btnAddPass");
+let addPasswordPopup = document.getElementById("addPasswordPopup");
+let btnCloseForm = document.getElementById("btnCloseForm");
+let credentialsContainer = document.getElementById("credentialsContainer");
+let credentialsAsPopup = document.getElementById("credentialAsPopup");
+let btnClearPass = document.getElementById("btnClearPass");
+const form = document.getElementById("dataForm");
+
+let jsonElement = [];
+
+// CARICA PASSWORD DAL SERVER
+function loadPasswords() {
+  fetch('http://localhost:3000/passwords')
+    .then(res => res.json())
+    .then(data => {
+      jsonElement = data;
+      credentialsContainer.innerHTML = '';
+      jsonElement.forEach((element, index) => {
+        createDiv("div", element, index);
+      });
+    })
+    .catch(err => console.error('Errore nel caricamento:', err));
+}
+
+// CREA DIV PER OGNI PASSWORD
+function createDiv(type, element, index) {
+  let returnedDiv = fillDiv(type, element, index);
+  let btnRemovePass = document.createElement("button");
+
+  btnRemovePass.classList = "btnRemovePass";
+  btnRemovePass.innerText = "Remove";
+  returnedDiv.appendChild(btnRemovePass);
+  credentialsContainer.appendChild(returnedDiv);
+
+  btnRemovePass.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    fetch(`http://localhost:3000/passwords/${element.id}`, {
+      method: 'DELETE'
+    })
+      .then(res => {
+        if (res.ok) loadPasswords();
+        else alert('Errore nella rimozione');
+      })
+      .catch(err => {
+        console.error('Errore nel DELETE:', err);
+        alert('Errore nel server');
+      });
+  });
+
+  returnedDiv.addEventListener("click", () => {
+    divAsPopup("div", element, index);
+  });
+
+  return returnedDiv;
+}
+
+// MOSTRA POPUP CON DETTAGLI
+function divAsPopup(type, element, index) {
+  let divPopup = document.createElement("div");
+  let btnClosePopup = document.createElement("button");
+  let btnSaveChanges = document.createElement("button");
+
+  btnClosePopup.innerText = "Close";
+  btnClosePopup.classList = "btnClosePopup";
+
+  btnSaveChanges.innerText = "Salva modifiche";
+  btnSaveChanges.classList = "btnSaveChanges";
+
+  // ELEMENTI FORM MODIFICA
+  let nameCredentialsPopup = document.createElement("h4");
+  nameCredentialsPopup.textContent = element.nameCredentials;
+
+  let labelUserPopup = document.createElement("label");
+  labelUserPopup.textContent = "User o Email";
+
+  let userPopup = document.createElement("input");
+  userPopup.type = "text";
+  userPopup.value = element.user;
+
+  let labelPasswordPopup = document.createElement("label");
+  labelPasswordPopup.textContent = "Password";
+
+  let passwordPopup = document.createElement("input");
+  passwordPopup.type = "text";
+  passwordPopup.value = element.password;
+
+  // POPUP STYLE
+  divPopup.type = type;
+  divPopup.classList.add("divPopup");
+  divPopup.append(
+    nameCredentialsPopup,
+    labelUserPopup,
+    userPopup,
+    labelPasswordPopup,
+    passwordPopup,
+    btnSaveChanges,
+    btnClosePopup
+  );
+  credentialsAsPopup.appendChild(divPopup);
+
+  containerList.style.pointerEvents = "none";
+  btnClearPass.style.pointerEvents = "none";
+
+  btnClosePopup.addEventListener("click", () => {
+    divPopup.remove();
+    containerList.style.pointerEvents = "auto";
+    btnClearPass.style.pointerEvents = "auto";
+  });
+
+  btnSaveChanges.addEventListener("click", () => {
+    const updated = {
+      nameCredentials: nameCredentialsPopup.textContent,
+      user: userPopup.value,
+      password: passwordPopup.value
     };
-
-    //jsonString = JSON.stringify(jsonElement, null, 2);
-    xhr.send(jsonString);
+    updatePassword(element.id, updated);
   });
 }
 
-async function getList() {
-  return new Promise((resolve, reject) => {
-    const xhr1 = new XMLHttpRequest();
-    const url = "/savePasswordList";
-    xhr1.open("GET", url, true);
-    xhr1.setRequestHeader("Content-Type", "application/json");
+// CREA DIV LISTA PRINCIPALE
+function fillDiv(type, element, index) {
+  let newDiv = document.createElement("div");
+  newDiv.classList.add("returnedDiv");
 
-    xhr1.onreadystatechange = function () {
-      if (xhr1.readyState === XMLHttpRequest.DONE) {
-        if (xhr1.status === 200) {
-          list = JSON.parse(xhr1.responseText);
-          jsonString = list;
-          console.log("Received!");
-          downloadList();
-          resolve();
-        } else {
-          reject(
-            new Error(`Error in second call: ${xhr1.status} ${xhr1.statusText}`)
-          );
-        }
-      }
-    };
-
-    xhr1.send();
+  ["nameCredentials", "user", "password"].forEach(key => {
+    let h1 = document.createElement("h1");
+    h1.textContent = element[key];
+    if (key !== "nameCredentials") h1.style.display = "none";
+    newDiv.appendChild(h1);
   });
+
+  return newDiv;
 }
 
-//Controllo online/offline
-let onlineStatus = navigator.onLine;
+// SUBMIT FORM AGGIUNTA PASSWORD
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
 
-//Aggiungo un listener per gestire cambiamenti di stato online/offline
-window.addEventListener('online', function() {
-  onlineStatus = true;
-  console.log("we are online");
+  const myFormData = new FormData(e.target);
+  const nameCredentials = myFormData.get("nameCredentials");
+  const user = myFormData.get("user");
+  const password = myFormData.get("password");
+
+ if (!nameCredentials || !user || !password) {
+    alert("⚠️ Tutti i campi sono obbligatori.");
+    return;
+  }
+
+  validatePasswordSOAP(password, isValid => {
+    if (!isValid) {
+      alert("❌ Password non sicura! Deve avere almeno 8 caratteri, una maiuscola, un numero e un simbolo.");
+      return;
+    }
+
+    const formDataObj = { nameCredentials, user, password };
+
+    fetch("http://localhost:3000/passwords", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formDataObj)
+    })
+    //.then(response => response.text())  
+    .then(response => response.json())
+      .then(newPassword => {
+        loadPasswords(); // Ricarica tutto
+        form.reset();
+      })
+      .catch(err => {
+        console.error("Errore durante il salvataggio:", err);
+        alert("Errore durante il salvataggio");
+      });
+  });
 });
-window.addEventListener('offline', function() {
-  onlineStatus = false;
-  console.log("we are offline");
+
+
+// ✅ VALIDAZIONE PASSWORD via BACKEND (non più direttamente SOAP)
+function validatePasswordSOAP(password, callback) {
+  fetch("http://localhost:3000/validate-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ password })
+  })
+    .then(res => res.json())
+    .then(data => {
+      callback(data.result === true);
+    })
+    .catch(err => {
+      console.error("Errore chiamata REST:", err);
+      callback(false);
+    });
+}
+
+
+// UPDATE PASSWORD
+function updatePassword(id, updatedData) {
+  fetch(`http://localhost:3000/passwords/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updatedData)
+  })
+    .then(res => {
+      if (!res.ok) throw new Error("Errore update");
+      return res.json();
+    })
+    .then(() => loadPasswords())
+    .catch(err => {
+      console.error("Errore:", err);
+      alert("Errore durante aggiornamento");
+    });
+}
+
+
+// POPUP FORM APERTURA E CHIUSURA
+btnAddPass.addEventListener("click", (e) => {
+  e.preventDefault();
+  addPasswordPopup.style.display = "flex";
+  containerList.style.pointerEvents = "none";
+  btnClearPass.style.pointerEvents = "none";
 });
 
+btnCloseForm.addEventListener("click", () => {
+  addPasswordPopup.style.display = "none";
+  containerList.style.pointerEvents = "auto";
+  btnClearPass.style.pointerEvents = "auto";
+});
 
-//Funzione per scaricamento csv Offline
-const download = function (data) { 
-  //Creo un blob formato csv e gli passo il parametro data
-  const blob = new Blob([data], { type: 'text/csv' }); 
-  //Creo un oggetto urls per il downnload 
-  const url = window.URL.createObjectURL(blob) 
-  //creo in link
-  const a = document.createElement('a') 
-  //passando il blob url  
-  a.setAttribute('href', url) 
-  //settando il link e passando un nome
-  a.setAttribute('download', 'Credentials.csv'); 
-  //Attivo la funzione, quindi creo il docuemnto
-  a.click() 
-}
+// CLEAR PASSWORDS
+btnClearPass.addEventListener("click", () => {
+  fetch('http://localhost:3000/passwords', { method: 'DELETE' })
+    .then(res => {
+      if (res.ok) loadPasswords();
+      else alert('Errore nella pulizia');
+    })
+    .catch(err => {
+      console.error('Errore nel DELETE:', err);
+      alert('Errore server');
+    });
+});
 
-//Altre funzioni
-
-function downloadList() {
-  //Crea un elemento "a" e simula un clic per avviare il download.
-  const a = document.createElement("a");
-  const blob = new Blob([JSON.stringify(list)], { type: "application/json" });
-  const url = window.URL.createObjectURL(blob);
-  a.href = url;
-  a.download = "passwordList.json";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
-}
+// CARICA PASSWORD AL LOAD
+window.addEventListener("load", loadPasswords);
 
 
-function credentialsToCsv() {
-  //Object.keys -> restituisce le chiavi dell'oggetto dato
-  const elementsKeys = [Object.keys(elements[0])];
-  //Concatena le keys separandole con una virgola
-  const concatenatedArray = elementsKeys.concat(elements); 
-  csv = concatenatedArray
-    .map((element) => {
-      //crea un csv mappando per ogni elemento i valori delle chiavi dell'oggetto(element) parsando con toString()
-      return Object.values(element).toString();
-    }).join("\n");
-}
+

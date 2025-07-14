@@ -1,10 +1,12 @@
-let elements = [];
+/*let elements = [];
 let checkLocal = localStorage.getItem("elements");
 //Struttura di controllo
 if (checkLocal != null && checkLocal!= []) {//Inizio con l'array preso in locale Attenzione if null evitare!
   elements = JSON.parse(localStorage.getItem("elements")); //Ogni volta che vado a prendere la variabile devo controllare se è null
 }
+*/
 
+/*
 const form = document.getElementById("dataForm");
 
 function createCredentials(elements) {
@@ -28,4 +30,7 @@ function createCredentials(elements) {
   });
 }
 createCredentials(elements);
+*/
+
+
 

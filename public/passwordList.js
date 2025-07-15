@@ -1,3 +1,8 @@
+const BASE_URL = location.hostname === "localhost"
+  ? "http://localhost:3000"
+  : "https://yoursmartwallett.onrender.com";
+
+
 
 // ELEMENTI HTML
 let btnAddPass = document.getElementById("btnAddPass");
@@ -12,7 +17,7 @@ let jsonElement = [];
 
 // CARICA PASSWORD DAL SERVER
 function loadPasswords() {
-  fetch('http://localhost:3000/passwords')
+  fetch(`${BASE_URL}/passwords`)
     .then(res => res.json())
     .then(data => {
       jsonElement = data;
@@ -24,29 +29,6 @@ function loadPasswords() {
     .catch(err => console.error('Errore nel caricamento:', err));
 }
 
-
-/*
-
-// CREA DIV PER OGNI PASSWORD
-function createDiv(type, element, index) {
-  let returnedDiv = fillDiv(type, element, index);
-  let btnRemovePass = document.createElement("button");
-  
-
-  btnRemovePass.classList = "btnRemovePass";
-  btnRemovePass.innerText = "Remove";
-
-
-  returnedDiv.appendChild(btnRemovePass);
-  credentialsContainer.appendChild(returnedDiv);
-
-  
-  returnedDiv.addEventListener("click", () => {
-    divAsPopup("div", element, index);
-  });
-  return returnedDiv;
-}
-*/
 
 function createDiv(type, element, index) {
   let returnedDiv = fillDiv(type, element, index);
@@ -61,7 +43,7 @@ function createDiv(type, element, index) {
     e.stopPropagation(); // ❗️Evita che venga attivato anche il popup
 
     if (confirm(`Vuoi davvero rimuovere "${element.nameCredentials}"?`)) {
-      fetch(`http://localhost:3000/passwords/${element.id}`, {
+      fetch(`${BASE_URL}/passwords/${element.id}`, {
         method: 'DELETE'
       })
         .then(res => {
@@ -181,7 +163,7 @@ divButtons.appendChild(btnClosePopup);
       }
 
       // Password ok, aggiorna
-      fetch(`http://localhost:3000/passwords/${element.id}`, {
+      fetch(`${BASE_URL}/passwords/${element.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updated)
@@ -242,7 +224,7 @@ form.addEventListener("submit", (e) => {
 
     const formDataObj = { nameCredentials, user, password };
 
-    fetch("http://localhost:3000/passwords", {
+    fetch(`${BASE_URL}/passwords`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formDataObj)
@@ -267,7 +249,7 @@ form.addEventListener("submit", (e) => {
 
 // VALIDAZIONE PASSWORD
 function validatePasswordSOAP(password, callback) {
-  fetch("http://localhost:3000/validate-password", {
+  fetch(`${BASE_URL}/validate-password`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -304,7 +286,7 @@ btnCloseForm.addEventListener("click", () => {
 
 // CLEAR PASSWORDS
 btnClearPass.addEventListener("click", () => {
-  fetch('http://localhost:3000/passwords', { method: 'DELETE' })
+  fetch(`${BASE_URL}/passwords`, { method: 'DELETE' })
     .then(res => {
       if (res.ok) loadPasswords();
       else alert('Errore nella pulizia');

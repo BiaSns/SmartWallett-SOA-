@@ -95,7 +95,6 @@ divButtons.appendChild(btnClosePopup);
   );
   
   credentialsAsPopup.appendChild(divPopup);
-  //credentialsAsPopup.appendChild(divButtons);
 
   containerList.style.pointerEvents = "none";
   btnClearPass.style.pointerEvents = "none";

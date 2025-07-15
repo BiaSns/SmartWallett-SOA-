@@ -45,7 +45,6 @@ function createDiv(type, element, index) {
 }
 
 
-
 // CREA DIV COME POPUP
 function divAsPopup(type, element, index) {
   let divPopup = document.createElement("div");
@@ -76,7 +75,12 @@ function divAsPopup(type, element, index) {
   passwordPopup.type = "text";
   passwordPopup.value = element.password;
 
-  // POPUP STYLE
+  let divButtons = document.createElement("div");
+//divButtons.classList.add("popupButtonsContainer"); // classe per lo stile
+divButtons.appendChild(btnSaveChanges);
+divButtons.appendChild(btnClosePopup);
+  
+// POPUP STYLE
   divPopup.type = type;
   divPopup.classList.add("divPopup");
   divPopup.append(
@@ -85,10 +89,13 @@ function divAsPopup(type, element, index) {
     userPopup,
     labelPasswordPopup,
     passwordPopup,
-    btnSaveChanges,
-    btnClosePopup
+    //btnSaveChanges,
+    //btnClosePopup
+    divButtons,
   );
+  
   credentialsAsPopup.appendChild(divPopup);
+  //credentialsAsPopup.appendChild(divButtons);
 
   containerList.style.pointerEvents = "none";
   btnClearPass.style.pointerEvents = "none";

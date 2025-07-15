@@ -25,15 +25,18 @@ function loadPasswords() {
 }
 
 
-
+/*
 
 // CREA DIV PER OGNI PASSWORD
 function createDiv(type, element, index) {
   let returnedDiv = fillDiv(type, element, index);
   let btnRemovePass = document.createElement("button");
+  
 
   btnRemovePass.classList = "btnRemovePass";
   btnRemovePass.innerText = "Remove";
+
+
   returnedDiv.appendChild(btnRemovePass);
   credentialsContainer.appendChild(returnedDiv);
 
@@ -41,6 +44,48 @@ function createDiv(type, element, index) {
   returnedDiv.addEventListener("click", () => {
     divAsPopup("div", element, index);
   });
+  return returnedDiv;
+}
+*/
+
+function createDiv(type, element, index) {
+  let returnedDiv = fillDiv(type, element, index);
+  let btnRemovePass = document.createElement("button");
+
+  btnRemovePass.classList = "btnRemovePass";
+  btnRemovePass.innerText = "Remove";
+
+  
+  btnRemovePass.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // ❗️Evita che venga attivato anche il popup
+
+    if (confirm(`Vuoi davvero rimuovere "${element.nameCredentials}"?`)) {
+      fetch(`http://localhost:3000/passwords/${element.id}`, {
+        method: 'DELETE'
+      })
+        .then(res => {
+          if (!res.ok) throw new Error("Errore nella rimozione");
+          return res.json();
+        })
+        .then(() => {
+          loadPasswords(); // 🔁 Aggiorna la lista dopo la rimozione
+        })
+        .catch(err => {
+          console.error('Errore nel DELETE:', err);
+          alert('Errore durante la rimozione');
+        });
+    }
+  });
+
+  returnedDiv.appendChild(btnRemovePass);
+  credentialsContainer.appendChild(returnedDiv);
+
+  // 👇 Questo apre il popup al click sul div, MA non se clicchi su "Remove"
+  returnedDiv.addEventListener("click", () => {
+    divAsPopup("div", element, index);
+  });
+
   return returnedDiv;
 }
 
@@ -72,8 +117,19 @@ function divAsPopup(type, element, index) {
   labelPasswordPopup.textContent = "Password";
 
   let passwordPopup = document.createElement("input");
-  passwordPopup.type = "text";
+  passwordPopup.type = "password";
   passwordPopup.value = element.password;
+  passwordPopup.style.cursor = "pointer";
+
+  // Evento mouseover → mostra password
+passwordPopup.addEventListener("mouseover", () => {
+  passwordPopup.type = "text";
+});
+
+// Evento mouseout → torna a nasconderla
+passwordPopup.addEventListener("mouseout", () => {
+  passwordPopup.type = "password";
+});
 
   let divButtons = document.createElement("div");
 //divButtons.classList.add("popupButtonsContainer"); // classe per lo stile
@@ -89,8 +145,6 @@ divButtons.appendChild(btnClosePopup);
     userPopup,
     labelPasswordPopup,
     passwordPopup,
-    //btnSaveChanges,
-    //btnClosePopup
     divButtons,
   );
   
@@ -246,6 +300,7 @@ btnCloseForm.addEventListener("click", () => {
   containerList.style.pointerEvents = "auto";
   btnClearPass.style.pointerEvents = "auto";
 });
+
 
 // CLEAR PASSWORDS
 btnClearPass.addEventListener("click", () => {

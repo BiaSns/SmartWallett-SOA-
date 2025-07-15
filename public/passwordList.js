@@ -24,6 +24,9 @@ function loadPasswords() {
     .catch(err => console.error('Errore nel caricamento:', err));
 }
 
+
+
+
 // CREA DIV PER OGNI PASSWORD
 function createDiv(type, element, index) {
   let returnedDiv = fillDiv(type, element, index);
@@ -34,31 +37,16 @@ function createDiv(type, element, index) {
   returnedDiv.appendChild(btnRemovePass);
   credentialsContainer.appendChild(returnedDiv);
 
-  btnRemovePass.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    fetch(`http://localhost:3000/passwords/${element.id}`, {
-      method: 'DELETE'
-    })
-      .then(res => {
-        if (res.ok) loadPasswords();
-        else alert('Errore nella rimozione');
-      })
-      .catch(err => {
-        console.error('Errore nel DELETE:', err);
-        alert('Errore nel server');
-      });
-  });
-
+  
   returnedDiv.addEventListener("click", () => {
     divAsPopup("div", element, index);
   });
-
   return returnedDiv;
 }
 
-// MOSTRA POPUP CON DETTAGLI
+
+
+// CREA DIV COME POPUP
 function divAsPopup(type, element, index) {
   let divPopup = document.createElement("div");
   let btnClosePopup = document.createElement("button");
@@ -105,21 +93,57 @@ function divAsPopup(type, element, index) {
   containerList.style.pointerEvents = "none";
   btnClearPass.style.pointerEvents = "none";
 
+  // CHIUDI POPUP
   btnClosePopup.addEventListener("click", () => {
     divPopup.remove();
     containerList.style.pointerEvents = "auto";
     btnClearPass.style.pointerEvents = "auto";
   });
 
+  // SALVA MODIFICHE
   btnSaveChanges.addEventListener("click", () => {
     const updated = {
       nameCredentials: nameCredentialsPopup.textContent,
       user: userPopup.value,
       password: passwordPopup.value
     };
-    updatePassword(element.id, updated);
+
+    if (!updated.user || !updated.password) {
+      alert("⚠️ I campi User e Password non possono essere vuoti.");
+      return;
+    }
+
+    // Verifica password sicura
+    validatePasswordSOAP(updated.password, isValid => {
+      if (!isValid) {
+        alert("❌ Password non sicura! Deve avere almeno 8 caratteri, una maiuscola, un numero e un simbolo.");
+        return;
+      }
+
+      // Password ok, aggiorna
+      fetch(`http://localhost:3000/passwords/${element.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+      })
+        .then(res => {
+          if (!res.ok) throw new Error("Errore update");
+          return res.json();
+        })
+        .then(() => {
+          loadPasswords();
+          divPopup.remove(); // chiusura popup SOLO dopo aggiornamento OK
+          containerList.style.pointerEvents = "auto";
+          btnClearPass.style.pointerEvents = "auto";
+        })
+        .catch(err => {
+          console.error("Errore:", err);
+          alert("Errore durante aggiornamento");
+        });
+    });
   });
 }
+
 
 // CREA DIV LISTA PRINCIPALE
 function fillDiv(type, element, index) {
@@ -168,6 +192,9 @@ form.addEventListener("submit", (e) => {
       .then(newPassword => {
         loadPasswords(); // Ricarica tutto
         form.reset();
+         addPasswordPopup.style.display = "none"; // 👈 chiude il popup
+         containerList.style.pointerEvents = "auto";
+         btnClearPass.style.pointerEvents = "auto";
       })
       .catch(err => {
         console.error("Errore durante il salvataggio:", err);
@@ -177,7 +204,8 @@ form.addEventListener("submit", (e) => {
 });
 
 
-// ✅ VALIDAZIONE PASSWORD via BACKEND (non più direttamente SOAP)
+
+// VALIDAZIONE PASSWORD
 function validatePasswordSOAP(password, callback) {
   fetch("http://localhost:3000/validate-password", {
     method: "POST",
@@ -197,23 +225,6 @@ function validatePasswordSOAP(password, callback) {
 }
 
 
-// UPDATE PASSWORD
-function updatePassword(id, updatedData) {
-  fetch(`http://localhost:3000/passwords/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updatedData)
-  })
-    .then(res => {
-      if (!res.ok) throw new Error("Errore update");
-      return res.json();
-    })
-    .then(() => loadPasswords())
-    .catch(err => {
-      console.error("Errore:", err);
-      alert("Errore durante aggiornamento");
-    });
-}
 
 
 // POPUP FORM APERTURA E CHIUSURA

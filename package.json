@@ -26,11 +26,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BiaSns/ProgettoBiagio.git"
+    "url": "https://github.com/BiaSns/SmartWallett-SOA-"
   },
   "bugs": {
-    "url": "https://github.com/BiaSns/ProgettoBiagio/issues"
+    "url": "https://github.com/BiaSns/SmartWallett-SOA-/issues"
   },
-  "homepage": "https://github.com/BiaSns/ProgettoBiagio#readme",
+  "homepage": "https://github.com/BiaSns/SmartWallett-SOA-#readme",
   "description": ""
 }

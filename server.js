@@ -7,6 +7,7 @@ const app = express();
 const port = 3000;
 //const soapUrl = "http://localhost:8001/wsdl";
 const soapUrl = process.env.SERVICE_SOAP_URL || "http://localhost:8001/wsdl";
+
 // Middleware
 app.use(cors());
 app.use(express.json());

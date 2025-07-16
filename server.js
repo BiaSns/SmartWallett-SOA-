@@ -5,7 +5,7 @@ const soap = require("soap");
 
 const app = express();
 const port = 3000;
-//const soapUrl = process.env.SERVICE_SOAP_URL || "http://localhost:8001/wsdl";
+
 const soapUrl = process.env.SOAP_URL || "http://localhost:8001/wsdl";
 
 // Middleware
@@ -16,37 +16,10 @@ app.use(express.static(path.join(__dirname, "public"))); // Serve file statici
 // Array in memoria
 let credentials = [];
 
+
 app.get("/passwords", (req, res) => {
   res.json(credentials);  // ✅ deve essere un array o oggetto
 });
-
-/*
-// ➤ GET tutte le credenziali
-app.post("/validate-password", (req, res) => {
-  const { password } = req.body;
-
-  if (!password) {
-    return res.status(400).json({ error: "Password mancante" });
-  }
-
-  soap.createClient(soapUrl, (err, client) => {
-    if (err) {
-      console.error("❌ Errore creazione client SOAP:", err);
-      return res.status(500).json({ error: "Errore SOAP" });
-    }
-
-    client.checkPasswordSecurity({ password }, (err, result) => {
-      if (err) {
-        console.error("❌ Errore chiamata SOAP:", err);
-        return res.status(500).json({ error: "Errore durante verifica" });
-      }
-
-      const isSecure = result.result === true || result.result === 'true';
-      return res.json({ result: isSecure });
-    });
-  });
-});
-*/
 
 
 
@@ -116,6 +89,7 @@ app.put("/passwords/:id", (req, res) => {
       console.error("❌ Errore creazione client SOAP (PUT):", err);
       return res.status(500).json({ error: "Errore SOAP" });
     }
+    client.setEndpoint("https://smartwallett-soa-soapserver.onrender.com/soap");
 
     client.checkPasswordSecurity({ password }, (err, result) => {
       if (err) {

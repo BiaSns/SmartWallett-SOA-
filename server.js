@@ -52,7 +52,7 @@ app.post("/validate-password", (req, res) => {
 
 app.post("/validate-password", (req, res) => {
   const { password } = req.body;
-  const soapUrl = process.env.SERVICE_SOAP_URL;
+  const soapUrl = process.env.SOAP_URL;
 
   console.log("📡 Inizio validazione password SOAP:", soapUrl);
 

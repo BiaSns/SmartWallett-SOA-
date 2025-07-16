@@ -5,7 +5,6 @@ const soap = require("soap");
 
 const app = express();
 const port = 3000;
-//const soapUrl = "http://localhost:8001/wsdl";
 const soapUrl = process.env.SERVICE_SOAP_URL || "http://localhost:8001/wsdl";
 
 // Middleware
@@ -65,7 +64,8 @@ app.post("/validate-password", (req, res) => {
       console.error("❌ Errore creazione client SOAP:", err);
       return res.status(500).json({ error: "Errore creazione client SOAP", detail: err.message });
     }
-
+    client.setEndpoint("https://smartwallett-soa-soapserver.onrender.com/soap");
+    
     client.checkPasswordSecurity({ password }, (err, result) => {
       if (err) {
         console.error("❌ Errore esecuzione SOAP:", err);

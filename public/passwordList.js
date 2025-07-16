@@ -154,6 +154,7 @@ divButtons.appendChild(btnClosePopup);
       alert("⚠️ I campi User e Password non possono essere vuoti.");
       return;
     }
+    console.log("🔄 Payload PUT:", updated);
 
     // Verifica password sicura
     validatePasswordSOAP(updated.password, isValid => {
@@ -166,12 +167,23 @@ divButtons.appendChild(btnClosePopup);
       fetch(`${BASE_URL}/passwords/${element.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated)
+        body: JSON.stringify(updated),
+
       })
-        .then(res => {
+        /*.then(res => {
           if (!res.ok) throw new Error("Errore update");
           return res.json();
-        })
+        })*/
+         .then(res => {
+         if (!res.ok) {
+         // ⛔️ LOG DETTAGLIATO
+        return res.text().then(text => {
+        console.error("❌ PUT non riuscita:", res.status, text);
+        throw new Error("Errore update");
+      });
+    }
+    return res.json();
+  })
         .then(() => {
           loadPasswords();
           divPopup.remove(); // chiusura popup SOLO dopo aggiornamento OK
